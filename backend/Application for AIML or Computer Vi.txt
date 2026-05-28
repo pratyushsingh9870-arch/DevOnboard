@@ -1,0 +1,21 @@
+Application for AI/ML or Computer Vision Internship
+Dear Hiring Team,
+
+I am studying Computer Science, and I specialize in Artificial Intelligence, Machine Learning, and Computer Vision. I am looking for an internship where I can use my skills to deploy models that are ready for production. I have experience building deep learning pipelines and optimizing models for use on edge devices. My skills match what you are looking for in an engineer.
+
+Here are some key things I have done:
+
+ I built a pipeline to diagnose Diabetic Retinopathy using a type of AI model called Inception-ResNet-V2. I used a technique called SMOTE to handle a problem where some classes had more data than others. I was able to get the model to be 92% accurate.
+
+ I made a system that can sort waste in time using a model called YOLOv8. I used techniques called model quantization and pruning to make the model run fast on devices with limited power. It can run at over 30 frames per second.
+I am currently working on automating tasks at My Equation. I wrote scripts in Python that reduced the time it takes to get things done by 40%.
+I am good at using Python, TensorFlow, PyTorch, OpenCV, and Red Hat Linux. I would like to help your team with machine learning or computer vision projects.
+
+My resume is attached. I hope we can talk about how my skills can help your team with your projects.
+Best regards,
+
+Pratyush Singh
+
++91-9639758518 | pratyushwork9@gmail.com
+GitHub: pratyushsingh9870-arch
+LinkedIn: pratyush9870

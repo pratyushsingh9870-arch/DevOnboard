@@ -98,7 +98,7 @@ curl -X POST https://devonboard-api.onrender.com/api/docs/generate-complete \
 
 ### Architecture View
 
-![Architecture](screenshots/architecture.png)
+![Architecture View](screenshots/architecture.png)
 
 ---
 

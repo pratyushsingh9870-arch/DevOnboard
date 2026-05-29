@@ -11,3 +11,4 @@ httpx
 anthropic
 openai
 PyGithub
+psycopg2-binary

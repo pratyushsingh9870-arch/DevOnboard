@@ -86,17 +86,15 @@ curl -X POST https://devonboard-api.onrender.com/api/docs/generate-complete \
 ---
 
 ## Tech Stack
-┌─────────────────────────────────────────────────┐
-│                   DevOnboard                     │
-│                                                  │
-│  Frontend          Backend           External    │
-│  ─────────         ───────           ────────    │
-│  React 18          FastAPI           GitHub API  │
-│  Tailwind CSS      SQLAlchemy        OpenRouter  │
-│  Axios             PostgreSQL        GPT Model   │
-│  React Router      Pydantic                      │
-└─────────────────────────────────────────────────┘
+## 🛠️ Tech Stack
 
+| Layer | Technologies |
+|---------|-------------|
+| Frontend | React 18, Tailwind CSS, Axios, React Router |
+| Backend | FastAPI, SQLAlchemy, Pydantic |
+| Database | PostgreSQL |
+| AI | OpenRouter, GPT Models |
+| External APIs | GitHub API |
 ---
 
 ## Getting Started

@@ -86,7 +86,7 @@ curl -X POST https://devonboard-api.onrender.com/api/docs/generate-complete \
 ---
 
 ## Tech Stack
-## 🛠️ Tech Stack
+##  Tech Stack
 
 | Layer | Technologies |
 |---------|-------------|
@@ -161,7 +161,9 @@ Full interactive docs: **[/docs](https://devonboard-api.onrender.com/docs)**
 
 ---
 
-## Project Structure
+##  Project Structure
+
+```text
 DevOnboard/
 ├── backend/
 │   ├── app/
@@ -169,38 +171,84 @@ DevOnboard/
 │   │   │   ├── docs.py          # Documentation endpoints
 │   │   │   └── repos.py         # Repository endpoints
 │   │   ├── models/
-│   │   │   ├── repository.py    # DB model
-│   │   │   └── documentation.py # DB model
+│   │   │   ├── repository.py
+│   │   │   └── documentation.py
 │   │   ├── services/
-│   │   │   ├── ai_service.py        # OpenRouter integration
-│   │   │   ├── github_service.py    # GitHub API integration
-│   │   │   └── script_generator.py  # Bash/PS/Docker scripts
-│   │   ├── main.py              # FastAPI app
-│   │   ├── config.py            # Settings
-│   │   └── database.py          # SQLAlchemy setup
+│   │   │   ├── ai_service.py
+│   │   │   ├── github_service.py
+│   │   │   └── script_generator.py
+│   │   ├── main.py
+│   │   ├── config.py
+│   │   └── database.py
 │   ├── requirements.txt
 │   └── .env.example
 └── frontend/
-├── src/
-│   ├── pages/
-│   │   ├── Home.jsx          # Landing + URL input
-│   │   ├── Results.jsx       # Generated docs viewer
-│   │   └── Dashboard.jsx     # Repository history
-│   ├── components/
-│   │   └── Navbar.jsx
-│   └── services/
-│       └── api.js            # Axios configuration
-└── package.json
+    ├── src/
+    │   ├── pages/
+    │   │   ├── Home.jsx
+    │   │   ├── Results.jsx
+    │   │   └── Dashboard.jsx
+    │   ├── components/
+    │   │   └── Navbar.jsx
+    │   └── services/
+    │       └── api.js
+    └── package.json
 
 ---
 
-## Business Case
-Average developer onboarding: 2-4 weeks
-With DevOnboard:               2 days
-Time saved per hire:    ~10 days of engineering time
-Cost saved per hire:    ~$4,800 (at $60/hr avg)
-Generation time:        < 60 seconds
-Cost per generation:    ~$0.015
+##  Business Impact
+
+<div align="center">
+
+### Before DevOnboard
+
+ Read scattered documentation  
+ Fix setup issues manually  
+ Depend on senior developers for guidance  
+ 2–4 weeks before meaningful contributions
+
+
+
+### After DevOnboard
+
+ Paste GitHub Repository URL  
+ AI analyzes codebase automatically  
+ Generate README, Setup Guide & Architecture Docs  
+ Productive in 1–3 days
+
+</div>
+
+| KPI | Estimated Impact |
+|------|------:|
+| Onboarding Time Reduced | 70–85% |
+| Time Saved Per Developer | 8–12 Working Days |
+| Documentation Generation Time | < 60 Seconds |
+| Cost Per Documentation Run | < ₹2 |
+| Platforms Supported | Windows, Linux, macOS |
+| Documentation Generated | README, Setup Guide, Architecture Docs |
+
+### Estimated Savings
+
+```text
+Average Fresher/Junior Developer Cost     ₹4–8 LPA
+Average Cost Per Working Day              ₹1,500–₹3,000
+
+Time Saved Per New Developer              8–12 Days
+Estimated Savings Per Hire                ₹12,000–₹36,000
+
+Documentation Generation Time             < 60 Seconds
+Estimated AI Cost Per Repository           < ₹2
+```
+
+### Why It Matters
+
+Every new developer spends days understanding the project structure,
+setting up dependencies, reading incomplete documentation, and seeking
+Help from senior engineers.
+
+DevOnboard converts a GitHub repository into a complete onboarding package
+within seconds, helping teams reduce onboarding overhead and enabling
+Developers to contribute faster.
 
 ---
 

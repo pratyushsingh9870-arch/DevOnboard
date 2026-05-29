@@ -82,10 +82,26 @@ curl -X POST https://devonboard-api.onrender.com/api/docs/generate-complete \
   }
 }
 ```
+## 📸 Application Preview
+
+### Home Page
+
+![Home Page](screenshots/home.png)
+
+### Generated README
+
+![Generated README](screenshots/readme-output.png)
+
+### Setup Guide
+
+![Setup Guide](screenshots/setup-guide.png)
+
+### Architecture View
+
+![Architecture](screenshots/architecture.png)
 
 ---
 
-## Tech Stack
 ##  Tech Stack
 
 | Layer | Technologies |

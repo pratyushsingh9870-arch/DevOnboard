@@ -18,82 +18,136 @@ class GitHubService:
             return f"{owner}/{repo_name}"
         return repo_url
 
-    def get_repository(self, repo_url: str) -> Optional[Dict]:
+def get_repository_context(self, repo_url: str) -> dict:
+    try:
+        repo_name = self._extract_repo_name(repo_url)
+        repo = self.client.get_repo(repo_name)
+
+        # ✅ Get ALL language percentages
+        languages_data = repo.get_languages()
+        total_bytes = sum(languages_data.values()) or 1
+        language_percentages = {
+            lang: round((bytes / total_bytes) * 100, 1)
+            for lang, bytes in languages_data.items()
+        }
+
+        # ✅ Get topics/tags
         try:
-            repo_name = self._extract_repo_name(repo_url)
-            repo = self.client.get_repo(repo_name)
-            languages = repo.get_languages()
+            topics = repo.get_topics()
+        except:
+            topics = []
 
-            return {
-                "name": repo.name,
-                "full_name": repo.full_name,
-                "description": repo.description,
-                "url": repo.html_url,
-                "clone_url": repo.clone_url,
-                "default_branch": repo.default_branch,
-                "primary_language": repo.language,
-                "languages": list(languages.keys()),
-                "stars": repo.stargazers_count,
-                "forks": repo.forks_count,
-                "open_issues": repo.open_issues_count,
-                "created_at": repo.created_at.isoformat(),
-                "updated_at": repo.updated_at.isoformat(),
-                "size": repo.size,
-            }
-
-        except GithubException as e:
-            print(f"GitHub API error: {e}")
-            return None
-
-        except Exception as e:
-            print(f"Error fetching repository: {e}")
-            return None
-
-
-    def get_repository_structure(self, repo_url: str, max_files: int = 100):
-
+        # ✅ Get license
         try:
-            repo_name = self._extract_repo_name(repo_url)
+            license_name = repo.license.name if repo.license else "Not specified"
+        except:
+            license_name = "Not specified"
 
-            repo = self.client.get_repo(repo_name)
+        # ✅ Get contributors count
+        try:
+            contributors_count = repo.get_contributors().totalCount
+        except:
+            contributors_count = 1
 
-            contents = repo.get_contents("")[:50]
+        # Build complete context
+        context = {
+            # Basic info
+            "name": repo.name,
+            "full_name": repo.full_name,
+            "description": repo.description or "",
+            "url": repo.html_url,
 
-            file_structure = []
+            # Stats - ALL real numbers
+            "stars": repo.stargazers_count,
+            "forks": repo.forks_count,
+            "watchers": repo.watchers_count,
+            "open_issues": repo.open_issues_count,
+            "contributors": contributors_count,
 
-            count = 0
+            # Languages with percentages
+            "languages": list(languages_data.keys()),
+            "language_percentages": language_percentages,
+            "primary_language": repo.language or "",
 
-            while contents and count < max_files:
+            # Metadata
+            "topics": topics,
+            "license": license_name,
+            "default_branch": repo.default_branch,
+            "created_at": repo.created_at.strftime("%B %Y"),
+            "last_updated": repo.updated_at.strftime("%B %d, %Y"),
 
-                file_content = contents.pop(0)
+            # File contents (read below)
+            "existing_readme": "",
+            "requirements": "",
+            "package_json": "",
+            "main_file_content": "",
+            "main_file_name": "",
+            "all_files": []
+        }
 
-                if file_content.type == "dir":
+        # Get root file list
+        try:
+            root_contents = repo.get_contents("")
+            context["all_files"] = [f.path for f in root_contents]
+        except:
+            pass
 
-                    file_structure.append({
-                        "path": file_content.path,
-                        "type": "directory",
-                        "size": 0
-                    })
+        # Read README
+        for readme_name in ["README.md", "readme.md", "README.txt"]:
+            try:
+                f = repo.get_contents(readme_name)
+                context["existing_readme"] = f.decoded_content.decode("utf-8")[:3000]
+                print(f"✅ Found {readme_name}")
+                break
+            except:
+                pass
 
-                else:
+        # Read requirements.txt
+        for req_name in ["requirements.txt", "Requirements.txt"]:
+            try:
+                f = repo.get_contents(req_name)
+                context["requirements"] = f.decoded_content.decode("utf-8")[:1000]
+                print(f"✅ Found {req_name}")
+                break
+            except:
+                pass
 
-                    file_structure.append({
-                        "path": file_content.path,
-                        "type": "file",
-                        "size": file_content.size,
-                        "extension": file_content.path.split(".")[-1]
-                        if "." in file_content.path else None
-                    })
+        # Read package.json
+        try:
+            f = repo.get_contents("package.json")
+            context["package_json"] = f.decoded_content.decode("utf-8")[:1000]
+            print("✅ Found package.json")
+        except:
+            pass
 
-                    count += 1
+        # Read main file
+        for filename in ["app.py", "App.py", "main.py", "index.py",
+                         "app.js", "index.js", "server.py", "run.py"]:
+            try:
+                f = repo.get_contents(filename)
+                context["main_file_content"] = f.decoded_content.decode("utf-8")[:2000]
+                context["main_file_name"] = filename
+                print(f"✅ Found main file: {filename}")
+                break
+            except:
+                pass
 
-            print(f"📁 Found {count} files")
+        # Summary log
+        print(f"\n📊 Context for {context['name']}:")
+        print(f"   ⭐ Stars: {context['stars']}")
+        print(f"   🍴 Forks: {context['forks']}")
+        print(f"   👁️  Watchers: {context['watchers']}")
+        print(f"   🔤 Languages: {context['language_percentages']}")
+        print(f"   📜 License: {context['license']}")
+        print(f"   🏷️  Topics: {context['topics']}")
+        print(f"   README: {'✅' if context['existing_readme'] else '❌'}")
+        print(f"   Requirements: {'✅' if context['requirements'] else '❌'}")
 
-            return file_structure
+        return context
 
-        except Exception as e:
-            print(f"Error fetching structure: {e}")
-            return None
+    except Exception as e:
+        print(f"Error: {e}")
+        return {}
 
 
     def get_file_content(self, repo_url: str, file_path: str):

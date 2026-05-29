@@ -15,3 +15,10 @@ frontend/.env
 .DS_Store
 Thumbs.db
 *.log
+
+# Root level files
+.env
+*.db
+
+# Local backup files
+backup/

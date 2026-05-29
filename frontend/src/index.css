@@ -13,3 +13,106 @@ body {
   background-color: #0f172a;
   color: #f1f5f9;
 }
+/* Markdown Styling */
+.markdown-content {
+  color: #cbd5e1;
+  line-height: 1.8;
+  font-size: 0.95rem;
+}
+.markdown-content h1 {
+  color: #fff;
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #334155;
+}
+.markdown-content h2 {
+  color: #f1f5f9;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 1.8rem 0 0.8rem 0;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid #1e293b;
+}
+.markdown-content h3 {
+  color: #e2e8f0;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 1.2rem 0 0.5rem 0;
+}
+.markdown-content p {
+  margin: 0 0 1rem 0;
+  color: #94a3b8;
+}
+.markdown-content ul,
+.markdown-content ol {
+  margin: 0.5rem 0 1rem 1.5rem;
+  color: #94a3b8;
+}
+.markdown-content li {
+  margin-bottom: 0.4rem;
+}
+.markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+.markdown-content th {
+  background: #1e293b;
+  color: #f1f5f9;
+  padding: 0.7rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  border: 1px solid #334155;
+}
+.markdown-content td {
+  padding: 0.6rem 1rem;
+  border: 1px solid #1e293b;
+  color: #94a3b8;
+}
+.markdown-content tr:nth-child(even) {
+  background: #0f172a;
+}
+.markdown-content code {
+  background: #1e293b;
+  color: #60a5fa;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-family: monospace;
+}
+.markdown-content pre {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+.markdown-content pre code {
+  background: none;
+  color: #4ade80;
+  padding: 0;
+}
+.markdown-content a {
+  color: #60a5fa;
+}
+.markdown-content blockquote {
+  border-left: 3px solid #3b82f6;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: #64748b;
+  font-style: italic;
+}
+.markdown-content hr {
+  border: none;
+  border-top: 1px solid #1e293b;
+  margin: 1.5rem 0;
+}
+.markdown-content img {
+  max-height: 24px;
+  display: inline;
+  margin: 0 2px;
+}

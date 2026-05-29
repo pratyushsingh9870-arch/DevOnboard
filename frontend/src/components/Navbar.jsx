@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Cpu } from 'lucide-react'
 
 export default function Navbar() {
   return (
@@ -9,16 +10,13 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-
-            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">D</span>
-            </div>
-
-            <span className="text-white font-bold text-xl">
-              DevOnboard
-            </span>
-
-          </Link>
+  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+    <Cpu size={16} className="text-white" />
+  </div>
+  <span className="text-white font-bold text-xl">
+    DevOnboard
+  </span>
+</Link>
 
           {/* Navigation */}
           <div className="flex items-center gap-6">

@@ -12,7 +12,6 @@ from ..models.documentation import Documentation
 
 router = APIRouter(prefix="/api/docs", tags=["documentation"])
 
-# Initialize services
 ai_service = AIService()
 github_service = GitHubService()
 script_generator = ScriptGenerator()
@@ -36,6 +35,69 @@ class CompleteOnboardingResponse(BaseModel):
     error: Optional[str] = None
 
 
+def inject_repo_stats(readme: str, repo_context: dict) -> str:
+    """
+    Inject real repository stats into the README.
+    This guarantees stars/forks/contributors always appear,
+    regardless of what the AI generated.
+    """
+    stars = repo_context.get('stars', 0)
+    forks = repo_context.get('forks', 0)
+    watchers = repo_context.get('watchers', 0)
+    contributors = repo_context.get('contributors', 1)
+    license_name = repo_context.get('license', 'MIT')
+    updated = repo_context.get('last_updated', '')
+    primary_language = repo_context.get('primary_language', 'Python')
+    full_name = repo_context.get('full_name', '')
+
+    # Build badges
+    badges = (
+        f"![Stars](https://img.shields.io/badge/stars-{stars:,}-yellow?style=flat-square) "
+        f"![Forks](https://img.shields.io/badge/forks-{forks:,}-blue?style=flat-square) "
+        f"![Language](https://img.shields.io/badge/language-{primary_language}-green?style=flat-square) "
+        f"![License](https://img.shields.io/badge/license-{license_name.replace(' ', '_')}-orange?style=flat-square)"
+    )
+
+    # Build stats table
+    stats_table = (
+        "\n## Repository Stats\n\n"
+        "| Metric | Value |\n"
+        "|--------|-------|\n"
+        f"| Stars | {stars:,} |\n"
+        f"| Forks | {forks:,} |\n"
+        f"| Watchers | {watchers:,} |\n"
+        f"| Contributors | {contributors} |\n"
+        f"| License | {license_name} |\n"
+        f"| Last Updated | {updated} |\n\n"
+    )
+
+    # Inject badges after the first heading
+    if "img.shields.io" not in readme:
+        lines = readme.split("\n")
+        for i, line in enumerate(lines):
+            if line.startswith("# "):
+                lines.insert(i + 1, "\n" + badges + "\n")
+                break
+        readme = "\n".join(lines)
+
+    # Inject stats table before Contributing section
+    if "Repository Stats" not in readme:
+        if "## 🤝 Contributing" in readme:
+            readme = readme.replace(
+                "## 🤝 Contributing",
+                stats_table + "## 🤝 Contributing"
+            )
+        elif "## Contributing" in readme:
+            readme = readme.replace(
+                "## Contributing",
+                stats_table + "## Contributing"
+            )
+        else:
+            readme += "\n" + stats_table
+
+    return readme
+
+
 @router.get("/test")
 async def test_ai():
     try:
@@ -56,9 +118,9 @@ async def generate_complete_onboarding(
     db: Session = Depends(get_db)
 ):
     try:
-        print(f"\n🚀 Generating for: {request.repo_url}")
+        print(f"Generating for: {request.repo_url}")
 
-        # ✅ STEP 1: Get actual repo info from GitHub
+        # Step 1: Get repo info
         repo_info = github_service.get_repository(request.repo_url)
         if not repo_info:
             return CompleteOnboardingResponse(
@@ -66,29 +128,30 @@ async def generate_complete_onboarding(
                 error="Could not fetch repository. Check the URL!"
             )
 
-        print(f"✅ Repo found: {repo_info['name']}")
+        print(f"Repo found: {repo_info['name']}")
 
-        # ✅ STEP 2: Read actual file contents
-        print("📂 Reading file contents...")
+        # Step 2: Read file contents and build context
         repo_context = github_service.get_repository_context(request.repo_url)
 
-        # ✅ STEP 3: Detect real tech stack
-        print("🔍 Detecting tech stack...")
+        # Step 3: Detect tech stack
         tech_stack = github_service.detect_tech_stack(request.repo_url)
-        print(f"   Languages: {repo_context.get('languages', [])}")
-        print(f"   Frameworks: {tech_stack.get('frameworks', [])}")
+        print(f"Languages: {repo_context.get('languages', [])}")
+        print(f"Frameworks: {tech_stack.get('frameworks', [])}")
 
-       # ONE call instead of THREE - 3x faster!
-        # ONE call instead of THREE - 3x faster!
-        print("🤖 Generating all docs in one AI call...")
-
+        # Step 4: Generate all documentation in one AI call
+        print("Generating documentation...")
         all_docs = ai_service.generate_all_docs(repo_context)
 
-        readme = all_docs["readme"]
-        setup_guide = all_docs["setup_guide"]
-        architecture = all_docs["architecture"]
-        # ✅ STEP 5: Generate platform-specific scripts
-        print("⚡ Generating scripts...")
+        readme = all_docs.get("readme", "")
+        setup_guide = all_docs.get("setup_guide", "")
+        architecture = all_docs.get("architecture", "")
+
+        # Step 5: Inject real stats into README (guaranteed accuracy)
+        if readme:
+            readme = inject_repo_stats(readme, repo_context)
+
+        # Step 6: Generate platform scripts
+        print("Generating scripts...")
         bash_script = script_generator.generate_bash_script(
             repo_name=repo_context["name"],
             languages=repo_context["languages"],
@@ -108,7 +171,7 @@ async def generate_complete_onboarding(
             has_database=len(tech_stack.get("databases", [])) > 0
         )
 
-        # ✅ STEP 6: Save to database
+        # Step 7: Save to database
         try:
             repo_db = db.query(Repository).filter(
                 Repository.full_name == repo_info["full_name"]
@@ -131,7 +194,6 @@ async def generate_complete_onboarding(
                 db.commit()
                 db.refresh(repo_db)
 
-            # Save documentation
             for doc_type, content in [
                 ("readme", readme),
                 ("setup", setup_guide),
@@ -148,12 +210,10 @@ async def generate_complete_onboarding(
                         content=content
                     ))
             db.commit()
-            print("✅ Saved to database!")
+            print("Saved to database.")
 
         except Exception as db_error:
-            print(f"⚠️ DB save failed (continuing): {db_error}")
-
-        print("\n✅ Complete! Returning results.")
+            print(f"DB save failed (continuing): {db_error}")
 
         return CompleteOnboardingResponse(
             success=True,
@@ -178,14 +238,13 @@ async def generate_complete_onboarding(
         )
 
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/generate-scripts", response_model=ScriptResponse)
 async def generate_setup_scripts(request: GenerateDocsRequest):
     try:
-        # ✅ Use real GitHub data
         repo_info = github_service.get_repository(request.repo_url)
         if not repo_info:
             return ScriptResponse(success=False, error="Could not fetch repository")

@@ -1,6 +1,7 @@
 from openai import OpenAI
 from ..config import get_settings
 
+
 settings = get_settings()
 
 
@@ -11,226 +12,716 @@ class AIService:
             base_url="https://openrouter.ai/api/v1",
             api_key=settings.openrouter_api_key
         )
-        self.model = "openai/gpt-oss-20b:free"
+
+        # Free OpenRouter router
+        self.model = "openrouter/free"
 
     def generate_all_docs(self, repo_context: dict) -> dict:
+        """
+        Generate README, setup guide, and architecture documentation
+        using actual repository information.
+        """
 
-        name = repo_context.get('name', 'Unknown')
-        description = repo_context.get('description', 'No description')
-        stars = repo_context.get('stars', 0)
-        forks = repo_context.get('forks', 0)
-        watchers = repo_context.get('watchers', 0)
-        license_name = repo_context.get('license', 'MIT')
-        topics = repo_context.get('topics', [])
-        created = repo_context.get('created_at', '')
-        updated = repo_context.get('last_updated', '')
-        contributors = repo_context.get('contributors', 1)
-        primary_language = repo_context.get('primary_language', '')
-        full_name = repo_context.get('full_name', name)
+        # ============================================================
+        # BASIC REPOSITORY INFORMATION
+        # ============================================================
 
-        print(f"TOPICS: {topics}")
-        print(f"STARS: {stars} | FORKS: {forks}")
+        name = repo_context.get("name", "Unknown")
 
-        lang_percentages = repo_context.get('language_percentages', {})
-        languages_text = ", ".join([
-            f"{lang} ({pct}%)" for lang, pct in lang_percentages.items()
-        ]) if lang_percentages else ", ".join(repo_context.get('languages', []))
-
-        # Detect run command from topics
-        if 'streamlit' in topics:
-            run_command = "streamlit run App/App.py"
-        elif 'flask' in ' '.join(topics).lower():
-            run_command = "flask run"
-        elif 'django' in ' '.join(topics).lower():
-            run_command = "python manage.py runserver"
-        elif 'fastapi' in ' '.join(topics).lower():
-            run_command = "uvicorn main:app --reload"
-        else:
-            run_command = "python main.py"
-
-        # Detect database from topics
-        db_setup = ""
-        if 'mysql' in ' '.join(topics).lower() or 'mysql-database' in topics:
-            db_setup = "\n# Setup MySQL database\nmysql -u root -p\nCREATE DATABASE project_db;"
-        elif 'postgresql' in ' '.join(topics).lower():
-            db_setup = "\n# Setup PostgreSQL\ncreatedb project_db"
-
-        context_parts = [
-            f"Repository: {name}",
-            f"Full Name: {full_name}",
-            f"URL: https://github.com/{full_name}",
-            f"Description: {description}",
-            f"Primary Language: {primary_language}",
-            f"All Languages: {languages_text}",
-            f"Stars: {stars}",
-            f"Forks: {forks}",
-            f"Watchers: {watchers}",
-            f"Contributors: {contributors}",
-            f"License: {license_name}",
-            f"Created: {created}",
-            f"Last Updated: {updated}",
-            f"Topics (actual tech stack): {', '.join(topics) if topics else 'None'}",
-        ]
-
-        if topics:
-            context_parts.append(
-                f"IMPORTANT TECHNOLOGIES FROM TOPICS: {', '.join(topics)}"
-            )
-
-        if repo_context.get('existing_readme'):
-            context_parts.append(
-                f"\n--- EXISTING README ---\n{repo_context['existing_readme'][:1500]}"
-            )
-        if repo_context.get('requirements'):
-            context_parts.append(
-                f"\n--- REQUIREMENTS.TXT ---\n{repo_context['requirements']}"
-            )
-        if repo_context.get('package_json'):
-            context_parts.append(
-                f"\n--- PACKAGE.JSON ---\n{repo_context['package_json']}"
-            )
-        if repo_context.get('main_file_content'):
-            context_parts.append(
-                f"\n--- MAIN FILE ({repo_context.get('main_file_name')}) ---\n"
-                f"{repo_context['main_file_content'][:1000]}"
-            )
-        if repo_context.get('all_files'):
-            context_parts.append(
-                f"\n--- FILES IN REPO ---\n"
-                + "\n".join(repo_context['all_files'][:25])
-            )
-
-        full_context = "\n".join(context_parts)
-
-       
-# Build prompt as separate variable - no indentation issues!
-        prompt = (
-            "You are a technical writer. Generate 3 documents for this GitHub repository.\n\n"
-            f"REAL DATA (use ONLY this - do not invent anything):\n{full_context}\n\n"
-            f"CRITICAL RULES:\n"
-            f"1. Stars = {stars}, Forks = {forks} - USE THESE EXACT NUMBERS IN BADGES\n"
-            f"2. Topics = {', '.join(topics) if topics else 'none'} - ACTUAL TECHNOLOGIES\n"
-            f"3. Languages = {languages_text} - USE EXACT PERCENTAGES\n"
-            f"4. Run command = {run_command}\n"
-            f"5. Do NOT invent any technology not in topics/requirements/files\n"
-            f"6. Topics are the most important technology indicators\n\n"
-            "Generate with NO spaces before markers:\n\n"
-            f"===README===\n"
-            f"# {name}\n\n"
-            f"![Stars](https://img.shields.io/badge/stars-{stars}-yellow?style=flat-square) "
-            f"![Forks](https://img.shields.io/badge/forks-{forks}-blue?style=flat-square) "
-            f"![Language](https://img.shields.io/badge/language-{primary_language}-green?style=flat-square) "
-            f"![License](https://img.shields.io/badge/license-{license_name.replace(' ', '_')}-orange?style=flat-square)\n\n"
-            f"> {description}\n\n"
-            "---\n\n"
-            "## 📌 Overview\n\n"
-            "[2-3 paragraphs about what this project does based on README and code]\n\n"
-            "---\n\n"
-            "## ✨ Features\n\n"
-            "| Feature | Description |\n"
-            "|---------|-------------|\n"
-            "[Only features visible in existing README or main file]\n\n"
-            "---\n\n"
-            "## 🛠️ Tech Stack\n\n"
-            "| Category | Technology |\n"
-            "|----------|------------|\n"
-            f"| Language | {languages_text} |\n"
-            "[Add rows for technologies found in topics]\n\n"
-            "---\n\n"
-            "## 📊 Repository Stats\n\n"
-            "| Metric | Value |\n"
-            "|--------|-------|\n"
-            f"| ⭐ Stars | {stars} |\n"
-            f"| 🍴 Forks | {forks} |\n"
-            f"| 👁️ Watchers | {watchers} |\n"
-            f"| 👥 Contributors | {contributors} |\n"
-            f"| 📜 License | {license_name} |\n"
-            f"| 🕒 Last Updated | {updated} |\n\n"
-            "---\n\n"
-            "##  Installation\n\n"
-            "```bash\n"
-            f"git clone https://github.com/{full_name}.git\n"
-            f"cd {name}\n"
-            "python -m venv venv\n"
-            "source venv/bin/activate\n"
-            f"pip install -r requirements.txt{db_setup}\n"
-            "```\n\n"
-            "---\n\n"
-            "## 📖 Usage\n\n"
-            "```bash\n"
-            f"{run_command}\n"
-            "```\n\n"
-            "[2-3 sentences about how to use based on README]\n\n"
-            "---\n\n"
-            "##  Project Structure\n\n"
-            "```\n"
-            f"{name}/\n"
-            "[Show actual files from FILES IN REPO - do not invent]\n"
-            "```\n\n"
-            "---\n\n"
-            "## 🤝 Contributing\n\n"
-            "1. Fork the repository\n"
-            "2. Create feature branch\n"
-            "3. Commit changes\n"
-            "4. Push and open a Pull Request\n\n"
-            "---\n\n"
-            "## 📜 License\n\n"
-            f"{license_name}\n\n"
-            "===SETUP===\n"
-            f"# Setup Guide - {name}\n\n"
-            "## Prerequisites\n\n"
-            f"[Only what is needed for: {languages_text}]\n\n"
-            "## Installation\n\n"
-            "```bash\n"
-            f"git clone https://github.com/{full_name}.git\n"
-            f"cd {name}\n"
-            "python -m venv venv\n"
-            "source venv/bin/activate\n"
-            f"pip install -r requirements.txt{db_setup}\n"
-            "```\n\n"
-            "## Running the Project\n\n"
-            "```bash\n"
-            f"{run_command}\n"
-            "```\n\n"
-            "## Common Issues\n\n"
-            "[2-3 issues specific to this tech stack]\n\n"
-            "===ARCHITECTURE===\n"
-            f"# Architecture - {name}\n\n"
-            "## Overview\n\n"
-            "[Describe architecture based on actual file structure]\n\n"
-            "## Key Components\n\n"
-            "[Describe each major file/folder from FILES list]\n\n"
-            "## Data Flow\n\n"
-            "[How data moves through the system]"
+        description = repo_context.get(
+            "description",
+            "No description available"
         )
 
+        stars = repo_context.get("stars", 0)
+        forks = repo_context.get("forks", 0)
+        watchers = repo_context.get("watchers", 0)
+
+        license_name = repo_context.get(
+            "license",
+            "Not specified"
+        )
+
+        topics = repo_context.get("topics", [])
+
+        created = repo_context.get("created_at", "")
+        updated = repo_context.get("last_updated", "")
+
+        contributors = repo_context.get(
+            "contributors",
+            1
+        )
+
+        primary_language = repo_context.get(
+            "primary_language",
+            ""
+        )
+
+        full_name = repo_context.get(
+            "full_name",
+            name
+        )
+
+        # ============================================================
+        # LANGUAGE INFORMATION
+        # ============================================================
+
+        lang_percentages = repo_context.get(
+            "language_percentages",
+            {}
+        )
+
+        if lang_percentages:
+            languages_text = ", ".join(
+                f"{lang} ({pct}%)"
+                for lang, pct in lang_percentages.items()
+            )
+        else:
+            languages_text = ", ".join(
+                repo_context.get("languages", [])
+            )
+
+        # ============================================================
+        # ACTUAL REPOSITORY FILE INFORMATION
+        # ============================================================
+
+        package_json = repo_context.get(
+            "package_json",
+            ""
+        )
+
+        requirements = repo_context.get(
+            "requirements",
+            ""
+        )
+
+        all_files = repo_context.get(
+            "all_files",
+            []
+        )
+
+        main_file_name = repo_context.get(
+            "main_file_name",
+            ""
+        )
+
+        existing_readme = repo_context.get(
+            "existing_readme",
+            ""
+        )
+
+        # Convert values safely to strings
+        package_json = package_json or ""
+        requirements = requirements or ""
+        existing_readme = existing_readme or ""
+
+        package_lower = package_json.lower()
+        requirements_lower = requirements.lower()
+
+        files_lower = [
+            str(file).lower()
+            for file in all_files
+        ]
+
+        # ============================================================
+        # DETECT PROJECT TYPE
+        # ============================================================
+
+        project_type = "Unknown"
+
+        if package_json:
+            project_type = "JavaScript/Node.js"
+
+        elif requirements:
+            project_type = "Python"
+
+        elif any(
+            file.endswith("pom.xml")
+            for file in files_lower
+        ):
+            project_type = "Java/Maven"
+
+        elif any(
+            file.endswith("build.gradle")
+            or file.endswith("build.gradle.kts")
+            for file in files_lower
+        ):
+            project_type = "Java/Gradle"
+
+        elif any(
+            file.endswith(".csproj")
+            for file in files_lower
+        ):
+            project_type = "C#/.NET"
+
+        elif any(
+            file.endswith("go.mod")
+            for file in files_lower
+        ):
+            project_type = "Go"
+
+        # ============================================================
+        # DETECT INSTALLATION COMMAND
+        # ============================================================
+
+        install_commands = []
+
+        if package_json:
+            install_commands = [
+                "npm install"
+            ]
+
+        elif requirements:
+            install_commands = [
+                "python -m venv venv",
+                "source venv/bin/activate",
+                "pip install -r requirements.txt"
+            ]
+
+        elif "pom.xml" in files_lower:
+            install_commands = [
+                "./mvnw install"
+            ]
+
+        elif (
+            "build.gradle" in files_lower
+            or "build.gradle.kts" in files_lower
+        ):
+            install_commands = [
+                "./gradlew build"
+            ]
+
+        elif "go.mod" in files_lower:
+            install_commands = [
+                "go mod download"
+            ]
+
+        elif any(
+            file.endswith(".csproj")
+            for file in files_lower
+        ):
+            install_commands = [
+                "dotnet restore"
+            ]
+
+        # ============================================================
+        # DETECT RUN COMMAND
+        # ============================================================
+
+        run_command = (
+            "Refer to the repository README for the correct "
+            "run command."
+        )
+
+        # -----------------------------
+        # JavaScript / Node.js
+        # -----------------------------
+
+        if package_json:
+
+            if '"dev"' in package_lower:
+                run_command = "npm run dev"
+
+            elif '"start"' in package_lower:
+                run_command = "npm start"
+
+            elif '"serve"' in package_lower:
+                run_command = "npm run serve"
+
+            else:
+                run_command = (
+                    "Check package.json scripts for the "
+                    "available run command."
+                )
+
+        # -----------------------------
+        # Python
+        # -----------------------------
+
+        elif requirements:
+
+            if "fastapi" in requirements_lower:
+
+                if main_file_name:
+                    module_name = (
+                        main_file_name
+                        .replace(".py", "")
+                        .replace("/", ".")
+                    )
+
+                    run_command = (
+                        f"uvicorn {module_name}:app --reload"
+                    )
+
+                else:
+                    run_command = (
+                        "uvicorn main:app --reload"
+                    )
+
+            elif "flask" in requirements_lower:
+
+                run_command = "flask run"
+
+            elif "django" in requirements_lower:
+
+                if "manage.py" in files_lower:
+                    run_command = (
+                        "python manage.py runserver"
+                    )
+
+                else:
+                    run_command = (
+                        "Use the Django project's documented "
+                        "run command."
+                    )
+
+            elif (
+                "streamlit" in requirements_lower
+                and any(
+                    file.endswith("app.py")
+                    for file in files_lower
+                )
+            ):
+                run_command = "streamlit run app.py"
+
+            elif main_file_name:
+
+                run_command = (
+                    f"python {main_file_name}"
+                )
+
+        # -----------------------------
+        # Go
+        # -----------------------------
+
+        elif "go.mod" in files_lower:
+
+            run_command = "go run ."
+
+        # -----------------------------
+        # .NET
+        # -----------------------------
+
+        elif any(
+            file.endswith(".csproj")
+            for file in files_lower
+        ):
+
+            run_command = "dotnet run"
+
+        # -----------------------------
+        # Java / Maven
+        # -----------------------------
+
+        elif "pom.xml" in files_lower:
+
+            run_command = "./mvnw spring-boot:run"
+
+        # ============================================================
+        # DATABASE DETECTION
+        # ============================================================
+
+        db_setup = ""
+
+        topics_text = " ".join(
+            str(topic)
+            for topic in topics
+        ).lower()
+
+        if (
+            "mysql" in topics_text
+            or "mysql-database" in topics_text
+        ):
+            db_setup = (
+                "\n# MySQL setup should follow the "
+                "repository documentation."
+            )
+
+        elif "postgresql" in topics_text:
+
+            db_setup = (
+                "\n# PostgreSQL setup should follow the "
+                "repository documentation."
+            )
+
+        # ============================================================
+        # BUILD INSTALL COMMAND TEXT
+        # ============================================================
+
+        if install_commands:
+
+            installation_commands = "\n".join(
+                install_commands
+            )
+
+        else:
+
+            installation_commands = (
+                "# Follow the installation instructions "
+                "provided by the repository."
+            )
+
+        # ============================================================
+        # CONTEXT FOR AI
+        # ============================================================
+
+        context_parts = [
+
+            f"Repository: {name}",
+
+            f"Full Name: {full_name}",
+
+            f"URL: https://github.com/{full_name}",
+
+            f"Description: {description}",
+
+            f"Project Type: {project_type}",
+
+            f"Primary Language: {primary_language}",
+
+            f"All Languages: {languages_text}",
+
+            f"Stars: {stars}",
+
+            f"Forks: {forks}",
+
+            f"Watchers: {watchers}",
+
+            f"Contributors: {contributors}",
+
+            f"License: {license_name}",
+
+            f"Created: {created}",
+
+            f"Last Updated: {updated}",
+
+            (
+                f"Topics: "
+                f"{', '.join(topics) if topics else 'None'}"
+            ),
+
+            (
+                f"Detected Installation Commands:\n"
+                f"{installation_commands}"
+            ),
+
+            f"Detected Run Command: {run_command}",
+        ]
+
+        # ============================================================
+        # TECHNOLOGY INFORMATION
+        # ============================================================
+
+        if topics:
+
+            context_parts.append(
+                "\n--- DETECTED TECHNOLOGIES ---\n"
+                + ", ".join(topics)
+            )
+
+        # ============================================================
+        # README
+        # ============================================================
+
+        if existing_readme:
+
+            context_parts.append(
+                "\n--- EXISTING README ---\n"
+                + existing_readme[:5000]
+            )
+
+        # ============================================================
+        # REQUIREMENTS
+        # ============================================================
+
+        if requirements:
+
+            context_parts.append(
+                "\n--- REQUIREMENTS.TXT ---\n"
+                + requirements[:5000]
+            )
+
+        # ============================================================
+        # PACKAGE.JSON
+        # ============================================================
+
+        if package_json:
+
+            context_parts.append(
+                "\n--- PACKAGE.JSON ---\n"
+                + package_json[:5000]
+            )
+
+        # ============================================================
+        # MAIN FILE
+        # ============================================================
+
+        if repo_context.get("main_file_content"):
+
+            context_parts.append(
+                (
+                    "\n--- MAIN FILE "
+                    f"({main_file_name}) ---\n"
+                    f"{repo_context['main_file_content'][:3000]}"
+                )
+            )
+
+        # ============================================================
+        # FILE STRUCTURE
+        # ============================================================
+
+        if all_files:
+
+            context_parts.append(
+                "\n--- FILES IN REPOSITORY ---\n"
+                + "\n".join(
+                    str(file)
+                    for file in all_files[:50]
+                )
+            )
+
+        full_context = "\n".join(
+            context_parts
+        )
+
+        # ============================================================
+        # AI PROMPT
+        # ============================================================
+
+        prompt = f"""
+You are an expert technical writer generating onboarding
+documentation for a GitHub repository.
+
+Use ONLY the repository evidence provided below.
+
+Do NOT invent:
+- technologies
+- dependencies
+- commands
+- files
+- frameworks
+- databases
+- features
+- architecture components
+- setup instructions
+
+If the repository does not provide enough evidence for something,
+say that it is not available instead of guessing.
+
+================ REPOSITORY DATA ================
+
+{full_context}
+
+================ STRICT RULES ================
+
+1. Use the exact repository statistics provided.
+
+2. Use the exact language percentages provided.
+
+3. Only mention technologies supported by:
+   - repository files
+   - package.json
+   - requirements.txt
+   - README
+   - detected topics
+   - detected project type
+
+4. Installation commands MUST match the detected project type.
+
+5. Do NOT add Python commands to a JavaScript/Node.js project
+   unless actual Python files/dependencies prove Python is required.
+
+6. Do NOT add npm commands to a Python project unless actual
+   package.json evidence proves Node.js is required.
+
+7. If package.json exists, inspect its scripts and dependencies
+   before suggesting npm commands.
+
+8. If requirements.txt exists, use it as evidence for Python
+   dependencies.
+
+9. Use the detected run command:
+   {run_command}
+
+10. If no reliable run command can be determined, explicitly say:
+    "The repository does not provide enough evidence to determine
+    the exact run command."
+
+11. Base architecture descriptions only on the provided file
+    structure and repository content.
+
+12. Do not claim that a feature exists unless repository evidence
+    supports it.
+
+13. Keep the generated documentation practical for a developer
+    who has just cloned the repository.
+
+================ OUTPUT FORMAT ================
+
+Return exactly these three sections:
+
+===README===
+
+A professional README containing:
+
+- project overview
+- verified features
+- technology stack
+- repository statistics
+- installation
+- usage
+- project structure
+- contributing
+- license
+
+===SETUP===
+
+A practical setup guide containing:
+
+- prerequisites
+- installation
+- environment setup if supported by evidence
+- how to run
+- common issues
+
+===ARCHITECTURE===
+
+A technical architecture document containing:
+
+- overview
+- major components
+- project organization
+- data flow
+
+Remember:
+
+ONLY use information supported by the repository evidence.
+Never guess commands or technologies.
+"""
+
+        # ============================================================
+        # OPENROUTER REQUEST
+        # ============================================================
+
         try:
+
             response = self.client.chat.completions.create(
                 model=self.model,
-                max_tokens=3000,
-                messages=[{"role": "user", "content": prompt}]
+                max_tokens=4000,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ]
             )
 
             content = response.choices[0].message.content
-            print(f" Generated {len(content)} chars")
 
-            readme = setup = architecture = ""
+            print(
+                f"Generated {len(content)} characters"
+            )
 
-            if "===README===" in content and "===SETUP===" in content:
-                readme = content.split("===README===")[1].split("===SETUP===")[0].strip()
+            # ========================================================
+            # PARSE AI RESPONSE
+            # ========================================================
 
-            if "===SETUP===" in content and "===ARCHITECTURE===" in content:
-                setup = content.split("===SETUP===")[1].split("===ARCHITECTURE===")[0].strip()
+            import re
 
-            if "===ARCHITECTURE===" in content:
-                architecture = content.split("===ARCHITECTURE===")[1].strip()
+            readme = ""
+            setup = ""
+            architecture = ""
+
+            # Normalize line endings
+            content = content.replace(
+                "\r\n",
+                "\n"
+            ).strip()
+
+            # --------------------------------------------------------
+            # Find section markers
+            #
+            # Accept formatting variations:
+            #
+            # ===README===
+            # ===README====
+            # ===README==
+            # ===ARCHITECTURE===
+            # ===ARCHITECTURE==
+            # --------------------------------------------------------
+
+            pattern = re.compile(
+                r"={2,}\s*"
+                r"(README|SETUP|ARCHITECTURE)"
+                r"\s*={2,}",
+                re.IGNORECASE
+            )
+
+            matches = list(
+                pattern.finditer(content)
+            )
+
+            # --------------------------------------------------------
+            # Extract sections
+            # --------------------------------------------------------
+
+            for i, match in enumerate(matches):
+
+                section_name = (
+                    match.group(1).upper()
+                )
+
+                start = match.end()
+
+                if i + 1 < len(matches):
+                    end = matches[i + 1].start()
+                else:
+                    end = len(content)
+
+                section_content = (
+                    content[start:end]
+                    .strip()
+                )
+
+                if section_name == "README":
+
+                    readme = section_content
+
+                elif section_name == "SETUP":
+
+                    setup = section_content
+
+                elif section_name == "ARCHITECTURE":
+
+                    architecture = section_content
+
+            # ========================================================
+            # FALLBACKS
+            # ========================================================
 
             if not readme:
+
                 readme = content
+
             if not setup:
-                setup = "## Setup\n\nSee README for installation instructions."
+
+                setup = (
+                    "## Setup\n\n"
+                    "See the repository README for "
+                    "installation instructions."
+                )
+
             if not architecture:
-                architecture = "## Architecture\n\nSee project files for structure."
+
+                architecture = (
+                    "## Architecture\n\n"
+                    "Architecture details could not be "
+                    "determined from the available repository data."
+                )
+
+            # ========================================================
+            # RETURN DOCUMENTATION
+            # ========================================================
 
             return {
                 "readme": readme,
@@ -239,16 +730,34 @@ class AIService:
             }
 
         except Exception as e:
-            print(f"OpenRouter Error (generate_all_docs): {e}")
+
+            print(
+                f"OpenRouter Error (generate_all_docs): {e}"
+            )
+
             return {
                 "readme": None,
                 "setup_guide": None,
                 "architecture": None
             }
 
-    def generate_readme(self, repo_context: dict) -> str:
-        """Keep for backward compatibility"""
-        result = self.generate_all_docs(repo_context)
+    # ================================================================
+    # BACKWARD COMPATIBILITY
+    # ================================================================
+
+    def generate_readme(
+        self,
+        repo_context: dict
+    ) -> str:
+
+        """
+        Keep for backward compatibility.
+        """
+
+        result = self.generate_all_docs(
+            repo_context
+        )
+
         return result.get("readme")
 
     def generate_setup_guide(
@@ -258,34 +767,69 @@ class AIService:
         frameworks: list,
         dependencies: str = None
     ) -> str:
-        """Keep for backward compatibility"""
 
-        prompt = f"""Generate a step-by-step setup guide for this project.
+        """
+        Keep for backward compatibility.
+        """
 
-Project: {repo_name}
-Languages: {', '.join(languages)}
-Frameworks: {', '.join(frameworks) if frameworks else 'None detected'}
+        prompt = f"""
+Generate a step-by-step setup guide for this project.
+
+Project:
+{repo_name}
+
+Languages:
+{', '.join(languages)}
+
+Frameworks:
+{', '.join(frameworks) if frameworks else 'None detected'}
+
 Dependencies:
 {dependencies or 'Not available'}
 
+Rules:
+- Do not invent technologies.
+- Do not invent dependencies.
+- Do not invent commands.
+- Use only the provided information.
+- If information is unavailable, explicitly say so.
+
 Include:
+
 1. Prerequisites
 2. Installation steps
 3. Environment setup
 4. How to run
 5. Common issues
 
-Return markdown only."""
+Return markdown only.
+"""
 
         try:
+
             response = self.client.chat.completions.create(
                 model=self.model,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ]
             )
+
             return response.choices[0].message.content
+
         except Exception as e:
-            print(f"OpenRouter Error (setup): {e}")
+
+            print(
+                f"OpenRouter Error (setup): {e}"
+            )
+
             return None
+
+    # ================================================================
+    # ARCHITECTURE
+    # ================================================================
 
     def generate_architecture_description(
         self,
@@ -293,40 +837,95 @@ Return markdown only."""
         file_structure: list,
         languages: list
     ) -> str:
-        """Keep for backward compatibility"""
 
-        files_text = "\n".join([
-            f["path"] for f in file_structure[:30]
-            if isinstance(f, dict)
-        ])
+        """
+        Keep for backward compatibility.
+        """
 
-        prompt = f"""Analyze the architecture of this project.
+        files_text = "\n".join(
+            [
+                f["path"]
+                for f in file_structure[:30]
+                if isinstance(f, dict)
+                and "path" in f
+            ]
+        )
 
-Project: {repo_name}
-Languages: {', '.join(languages)}
+        prompt = f"""
+Analyze the architecture of this project.
+
+Project:
+{repo_name}
+
+Languages:
+{', '.join(languages)}
+
 Files:
 {files_text}
 
-Describe architecture, key components, and project organization.
-Return markdown only."""
+Rules:
+- Base the architecture only on the provided files.
+- Do not invent components or technologies.
+- If something cannot be determined, say so.
+
+Describe:
+
+1. Architecture overview
+2. Key components
+3. Project organization
+4. Data flow
+
+Return markdown only.
+"""
 
         try:
+
             response = self.client.chat.completions.create(
                 model=self.model,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ]
             )
+
             return response.choices[0].message.content
+
         except Exception as e:
-            print(f"OpenRouter Error (architecture): {e}")
+
+            print(
+                f"OpenRouter Error (architecture): {e}"
+            )
+
             return None
 
+    # ================================================================
+    # CONNECTION TEST
+    # ================================================================
+
     def test_connection(self) -> bool:
+
         try:
+
             response = self.client.chat.completions.create(
                 model=self.model,
-                messages=[{"role": "user", "content": "Reply only with: API working"}]
+                messages=[
+                    {
+                        "role": "user",
+                        "content": "Reply only with: API working"
+                    }
+                ]
             )
-            return "working" in response.choices[0].message.content.lower()
+
+            content = response.choices[0].message.content
+
+            return (
+                "working" in content.lower()
+            )
+
         except Exception as e:
+
             print(e)
+
             return False
